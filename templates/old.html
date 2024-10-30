@@ -226,64 +226,112 @@
             <div class="card">
               <div class="card-body">
                 <div class="row">
-                  <!-- Power Control Toggle -->
+                  <!-- Terrace Lamp Toggle -->
                   <div class="col-md-3 col-12">
-                    <p class="mr-2">POWER CONTROL:</p>
-                    <button
-                      type="button"
-                      id="toggleButton1"
-                      class="btn btn-danger"
-                      onclick="toggleLamp(this)"
-                      data-status="off"
-                      data-lamp-id="1"
-                    >
-                      OFF
-                    </button>
+                    <p class="mr-2">POWER CONTROL :</p>
+                    <div class="custom-control custom-switch">
+                      <button
+                        type="button"
+                        name="button-settings"
+                        id="Hijau1"
+                        class="btn btn-danger"
+                        value="on1"
+                        onClick="changeStatus(this.value)"
+                      >
+                        OFF
+                      </button>
+                      <button
+                        type="button"
+                        name="button-settings"
+                        id="Merah1"
+                        class="btn btn-success"
+                        value="off1"
+                        onClick="changeStatus(this.value)"
+                      >
+                        ON
+                      </button>
+                    </div>
                   </div>
 
                   <!-- Garden Lamp Toggle -->
                   <div class="col-md-3 col-12">
-                    <p class="mr-2">GARDEN LAMP:</p>
-                    <button
-                      type="button"
-                      id="toggleButton2"
-                      class="btn btn-danger"
-                      onclick="toggleLamp(this)"
-                      data-status="off"
-                      data-lamp-id="2"
-                    >
-                      OFF
-                    </button>
+                    <p class="mr-2">GARDEN LAMP :</p>
+                    <div class="custom-control custom-switch">
+                      <button
+                        type="button"
+                        name="button-settings"
+                        id="Hijau2"
+                        class="btn btn-danger"
+                        value="on2"
+                        onClick="changeStatus(this.value)"
+                      >
+                        OFF
+                      </button>
+                      <button
+                        type="button"
+                        name="button-settings"
+                        id="Merah2"
+                        class="btn btn-success"
+                        value="off2"
+                        onClick="changeStatus(this.value)"
+                      >
+                        ON
+                      </button>
+                    </div>
                   </div>
 
-                  <!-- Office Lamp Toggle -->
+                  <!-- Room Lamp Toggle -->
                   <div class="col-md-3 col-12">
-                    <p class="mr-2">OFFICE LAMP:</p>
-                    <button
-                      type="button"
-                      id="toggleButton3"
-                      class="btn btn-danger"
-                      onclick="toggleLamp(this)"
-                      data-status="off"
-                      data-lamp-id="3"
-                    >
-                      OFF
-                    </button>
+                    <p class="mr-2">OFFICE LAMP :</p>
+                    <div class="custom-control custom-switch">
+                      <button
+                        type="button"
+                        name="button-settings"
+                        id="Hijau3"
+                        class="btn btn-success"
+                        value="on3"
+                        onClick="changeStatus(this.value)"
+                      >
+                        ON
+                      </button>
+                      <button
+                        type="button"
+                        name="button-settings"
+                        id="Merah3"
+                        class="btn btn-danger"
+                        value="off3"
+                        onClick="changeStatus(this.value)"
+                      >
+                        OFF
+                      </button>
+                    </div>
                   </div>
 
-                  <!-- Buzzer Toggle -->
+                  <!-- Alarm Lamp Toggle -->
                   <div class="col-md-3 col-12">
-                    <p class="mr-2">BUZZER:</p>
-                    <button
-                      type="button"
-                      id="toggleButton4"
-                      class="btn btn-danger"
-                      onclick="toggleLamp(this)"
-                      data-status="off"
-                      data-lamp-id="4"
-                    >
-                      OFF
-                    </button>
+                    <p class="mr-2">BUZZER :</p>
+                    <div class="custom-control custom-switch">
+                      <button
+                        type="button"
+                        name="button-settings"
+                        id="Hijau4"
+                        class="btn btn-success"
+                        value="on4"
+                        onClick="changeStatus(this.value)"
+                      >
+                        ON
+                      </button>
+                      <button
+                        type="button"
+                        name="button-settings"
+                        id="Merah4"
+                        class="btn btn-danger"
+                        value="off4"
+                        onClick="changeStatus(this.value)"
+                      >
+                        OFF
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -350,13 +398,13 @@
 
     <script>
       $(document).ready(function () {
-        // Fungsi update data
         function updateSensorData() {
           $.ajax({
             url: "/updateData",
             method: "GET",
             success: function (data) {
               const parsedData = JSON.parse(data);
+
               $("#temp-value").text(parsedData.readingTemp.toFixed(1));
               $("#humidity-value").text(parsedData.readingHum.toFixed(1));
               $("#pressure-value").text(parsedData.readingPress.toFixed(1));
@@ -366,6 +414,9 @@
               $("#terrace-status").text(co > 100 ? "ON" : "OFF");
               $("#garden-status").text(co > 200 ? "ON" : "OFF");
               $("#room-status").text(co > 300 ? "ON" : "OFF");
+
+              //$("#running-text").text(`${parsedData.running}`);
+
               $("#ip").text(`Device IP: ${parsedData.ip}`);
             },
             error: function () {
@@ -375,77 +426,82 @@
         }
 
         updateSensorData();
+
         setInterval(updateSensorData, 5000);
 
-        var targetUrl = `ws://${location.host}/ws`;
-        var websocket;
+        function toggleLamp(lampId) {
+          const lamp = $("#" + lampId);
+          const status = lamp.prop("checked") ? "on" : "off";
+          const lampNumber = lampId.replace("Lamp", "");
+          const ws = new WebSocket("ws://" + window.location.hostname + "/ws");
 
-        window.addEventListener("load", onLoad);
-        function onLoad() {
-          initializeSocket();
+          ws.onopen = function () {
+            ws.send(`${status}${lampNumber}`);
+          };
+
+          ws.onmessage = function (event) {
+            console.log("WebSocket response:", event.data);
+          };
         }
 
-        function initializeSocket() {
-          console.log(
-            "Opening WebSocket connection to ESP32 MicroPython Server..."
-          );
-          websocket = new WebSocket(targetUrl);
-          websocket.onopen = onOpen;
-          websocket.onclose = onClose;
-          websocket.onmessage = onMessage;
-        }
+        $("#terraceLamp").on("change", function () {
+          toggleLamp("terraceLamp");
+        });
 
-        function onOpen(event) {
-          console.log("Starting connection to WebSocket server..");
-        }
+        $("#gardenLamp").on("change", function () {
+          toggleLamp("gardenLamp");
+        });
 
-        function onClose(event) {
-          console.log("Closing connection to server..");
-          setTimeout(initializeSocket, 2000);
-        }
-
-        function onMessage(event) {
-          console.log("WebSocket message received:", event);
-        }
-
-        // fungsi kirim ke web socket
-        function sendMessage(message) {
-          if (websocket.readyState === WebSocket.OPEN) {
-            websocket.send(message);
-          } else {
-            console.error("WebSocket is not open. Unable to send message.");
-          }
-        }
-
-        // fungsi button
-        window.toggleLamp = function (button) {
-          const currentStatus = button.getAttribute("data-status");
-          const lampId = button.getAttribute("data-lamp-id");
-          const newStatus = currentStatus === "off" ? "on" : "off";
-
-          // Update the button's visual state
-          button.classList.toggle("btn-danger", newStatus === "off");
-          button.classList.toggle("btn-success", newStatus === "on");
-          button.textContent = newStatus === "on" ? "ON" : "OFF";
-          button.setAttribute("data-status", newStatus);
-
-          // Send message through WebSocket
-          sendMessage(`${newStatus}${lampId}`);
-          console.log(`${button.id} is now ${newStatus}`);
-        };
-
-        // Additional settings for button functionality
-        var buttonSettings = document.querySelectorAll(
-          'button[type=button][name="button-settings"]'
-        );
-        buttonSettings.forEach((button) =>
-          button.addEventListener("click", () => {
-            var btn = button.value;
-            console.log("Button Settings :: " + btn);
-            sendMessage(btn);
-          })
-        );
+        $("#roomLamp").on("change", function () {
+          toggleLamp("roomLamp");
+        });
       });
+
+      var targetUrl = `ws://${location.host}/ws`;
+      var websocket;
+      const name = document.querySelector(".name");
+      const button = document.querySelector("button");
+
+      window.addEventListener("load", onLoad);
+      function onLoad() {
+        initializeSocket();
+        setDefaultSpeed();
+      }
+
+      function initializeSocket() {
+        console.log(
+          "Opening WebSocket connection to ESP32 MicroPython Server..."
+        );
+        websocket = new WebSocket(targetUrl);
+        websocket.onopen = onOpen;
+        websocket.onclose = onClose;
+        websocket.onmessage = onMessage;
+      }
+      function onOpen(event) {
+        console.log("Starting connection to WebSocket server..");
+      }
+      function onClose(event) {
+        console.log("Closing connection to server..");
+        setTimeout(initializeSocket, 2000);
+      }
+      function onMessage(event) {
+        console.log("WebSocket message received:", event);
+      }
+
+      function sendMessage(message) {
+        websocket.send(message);
+      }
+
+      var buttonSettings = document.querySelectorAll(
+        'button[type=button][name="button-settings"]'
+      );
+      buttonSettings.forEach((button) =>
+        button.addEventListener("click", () => {
+          var btn = button.value;
+          console.log("Button Settings :: " + btn);
+          sendMessage(btn);
+        })
+      );
 
       function setDefaultSpeed() {
         console.log("Setting default speed to normal..");

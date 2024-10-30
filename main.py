@@ -13,7 +13,7 @@ from boot import do_connect
 ip= do_connect()
 print('Get IP :', ip)
 
-ldr = ADC(Pin(27))
+ldr = ADC(Pin(26))
 
 sda = Pin(20)
 scl = Pin(21)
@@ -25,10 +25,10 @@ display = SSD1306_I2C(128, 64, i2c)
 app = Microdot()
 Response.default_content_type = 'text/html'
 
-l1 = POWERlab(16)
-l2 = POWERlab(17)
-l3 = POWERlab(1)
-bz = POWERlab(28)
+l1 = POWERlab(15)
+l2 = POWERlab(16)
+l3 = POWERlab(17)
+bz = POWERlab(8)
 
 l1.offPower()
 l2.offPower()
@@ -129,12 +129,12 @@ async def shutdown(request):
 @app.route('/static/<path:path>')
 def static(request, path):
     if '..' in path:
-        # directory traversal is not allowed
+        # redirect jika data tidak ada
         return 'Not found', 404
     return send_file('static/' + path)
 
 if __name__ == "__main__":
     try:
-        app.run(debug = True, host='192.168.0.112')
+        app.run(debug = True, host='192.168.20.215', port=5000)
     except KeyboardInterrupt:
         pass
