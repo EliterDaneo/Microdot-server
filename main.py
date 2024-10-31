@@ -129,7 +129,6 @@ async def shutdown(request):
 @app.route('/static/<path:path>')
 def static(request, path):
     if '..' in path:
-        # redirect jika data tidak ada
         return 'Not found', 404
     return send_file('static/' + path)
 

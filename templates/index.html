@@ -306,6 +306,56 @@
       </div>
     </footer>
 
+    <!-- Modal untuk Validasi PIN -->
+    <div
+      class="modal fade"
+      id="pinModal"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="pinModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="pinModalLabel">Enter PIN</h5>
+            <button
+              type="button"
+              class="close"
+              data-dismiss="modal"
+              aria-label="Close"
+            >
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <input
+              type="password"
+              id="pinInput"
+              class="form-control"
+              placeholder="Enter PIN"
+            />
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick="validatePin()"
+            >
+              Submit
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
@@ -339,13 +389,13 @@
               // IE/Edge
               document.documentElement.msRequestFullscreen();
             }
-
             // Sembunyikan prompt setelah berhasil memasuki fullscreen
             prompt.style.display = "none";
           },
           { once: true }
-        ); // Event hanya dieksekusi sekali
+        );
       });
+      // Event hanya dieksekusi sekali
     </script>
 
     <script>
@@ -377,90 +427,69 @@
         updateSensorData();
         setInterval(updateSensorData, 5000);
 
-        var targetUrl = `ws://${location.host}/ws`;
-        var websocket;
-
-        window.addEventListener("load", onLoad);
-        function onLoad() {
-          initializeSocket();
-        }
+        let targetUrl = `ws://${location.host}/ws`;
+        let websocket;
+        // Simpan tombol yang diklik
+        let currentButton = null;
 
         function initializeSocket() {
           console.log(
             "Opening WebSocket connection to ESP32 MicroPython Server..."
           );
           websocket = new WebSocket(targetUrl);
-          websocket.onopen = onOpen;
-          websocket.onclose = onClose;
-          websocket.onmessage = onMessage;
+          websocket.onopen = function () {
+            console.log("Connected to WebSocket server.");
+          };
+          websocket.onclose = function () {
+            console.log("WebSocket connection closed, retrying...");
+            setTimeout(initializeSocket, 2000);
+          };
+          websocket.onmessage = function (event) {
+            console.log("WebSocket message received:", event.data);
+          };
         }
 
-        function onOpen(event) {
-          console.log("Starting connection to WebSocket server..");
-        }
-
-        function onClose(event) {
-          console.log("Closing connection to server..");
-          setTimeout(initializeSocket, 2000);
-        }
-
-        function onMessage(event) {
-          console.log("WebSocket message received:", event);
-        }
-
-        // fungsi kirim ke web socket
         function sendMessage(message) {
           if (websocket.readyState === WebSocket.OPEN) {
             websocket.send(message);
           } else {
-            console.error("WebSocket is not open. Unable to send message.");
+            console.error("WebSocket not open. Cannot send message.");
           }
         }
 
-        // fungsi button
         window.toggleLamp = function (button) {
-          const currentStatus = button.getAttribute("data-status");
-          const lampId = button.getAttribute("data-lamp-id");
-          const newStatus = currentStatus === "off" ? "on" : "off";
-
-          // Update the button's visual state
-          button.classList.toggle("btn-danger", newStatus === "off");
-          button.classList.toggle("btn-success", newStatus === "on");
-          button.textContent = newStatus === "on" ? "ON" : "OFF";
-          button.setAttribute("data-status", newStatus);
-
-          // Send message through WebSocket
-          sendMessage(`${newStatus}${lampId}`);
-          console.log(`${button.id} is now ${newStatus}`);
+          // Simpan referensi tombol yang diklik
+          currentButton = button;
+          // Munculkan modal untuk memasukkan PIN
+          $("#pinModal").modal("show");
         };
 
-        // Additional settings for button functionality
-        var buttonSettings = document.querySelectorAll(
-          'button[type=button][name="button-settings"]'
-        );
-        buttonSettings.forEach((button) =>
-          button.addEventListener("click", () => {
-            var btn = button.value;
-            console.log("Button Settings :: " + btn);
-            sendMessage(btn);
-          })
-        );
+        window.validatePin = function () {
+          const pin = $("#pinInput").val();
+          $.getJSON("/pin.json", function (data) {
+            if (pin === data.correctPin) {
+              // Sembunyikan modal
+              $("#pinModal").modal("hide");
+
+              const currentStatus = currentButton.getAttribute("data-status");
+              const lampId = currentButton.getAttribute("data-lamp-id");
+              const newStatus = currentStatus === "off" ? "on" : "off";
+
+              currentButton.classList.toggle("btn-danger", newStatus === "off");
+              currentButton.classList.toggle("btn-success", newStatus === "on");
+              currentButton.textContent = newStatus === "on" ? "ON" : "OFF";
+              currentButton.setAttribute("data-status", newStatus);
+
+              sendMessage(`${newStatus}${lampId}`);
+              console.log(`${currentButton.id} is now ${newStatus}`);
+            } else {
+              alert("Incorrect PIN!");
+            }
+          });
+        };
+
+        window.addEventListener("load", initializeSocket);
       });
-
-      function setDefaultSpeed() {
-        console.log("Setting default speed to normal..");
-        let idM1 = document.getElementById("Merah1");
-        let idG1 = document.getElementById("Hijau1");
-
-        let idM2 = document.getElementById("Merah2");
-        let idG2 = document.getElementById("Hijau2");
-
-        let idM3 = document.getElementById("Merah3");
-        let idG3 = document.getElementById("Hijau3");
-
-        let idM4 = document.getElementById("Merah4");
-        let idG4 = document.getElementById("Hijau4");
-      }
 
       $(document).ready(function () {
         // Function to update sensor data
@@ -619,7 +648,8 @@
               // Memperbarui chart dengan data terbaru
               updatePieChart(studentCount, teacherCount);
             } else {
-              updatePieChart(0, 0); // Data default jika tidak ada data
+              // Data default jika tidak ada data
+              updatePieChart(0, 0);
             }
           },
           error: function (xhr, status, error) {
@@ -645,7 +675,8 @@
             datasets: [
               {
                 data: [studentCount, teacherCount],
-                backgroundColor: ["#f39c12", "#00c0ef"], // Warna AdminLTE: kuning dan biru
+                // Warna AdminLTE: kuning dan biru
+                backgroundColor: ["#f39c12", "#00c0ef"],
               },
             ],
           },
