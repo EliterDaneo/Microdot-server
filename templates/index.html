@@ -488,6 +488,31 @@
           });
         };
 
+        //Jika kode diatas tidak berjalan maka ganti dengan ini
+        // window.validatePin = function () {
+        //   const pin = $("#pinInput").val();
+        //   const correctPin = "1234"; // Menetapkan PIN di sini
+
+        //   if (pin === correctPin) {
+        //     // Sembunyikan modal
+        //     $("#pinModal").modal("hide");
+
+        //     const currentStatus = currentButton.getAttribute("data-status");
+        //     const lampId = currentButton.getAttribute("data-lamp-id");
+        //     const newStatus = currentStatus === "off" ? "on" : "off";
+
+        //     currentButton.classList.toggle("btn-danger", newStatus === "off");
+        //     currentButton.classList.toggle("btn-success", newStatus === "on");
+        //     currentButton.textContent = newStatus === "on" ? "ON" : "OFF";
+        //     currentButton.setAttribute("data-status", newStatus);
+
+        //     sendMessage(`${newStatus}${lampId}`);
+        //     console.log(`${currentButton.id} is now ${newStatus}`);
+        //   } else {
+        //     alert("Incorrect PIN!");
+        //   }
+        // };
+
         window.addEventListener("load", initializeSocket);
       });
 
